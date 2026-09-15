@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">PIN Alarm Lock</string>
+    <string name="setup_enter_title">Set a PIN</string>
+    <string name="setup_enter_subtitle">Choose a 4–6 digit PIN</string>
+    <string name="setup_confirm_title">Confirm PIN</string>
+    <string name="setup_confirm_subtitle">Enter the same PIN again</string>
+    <string name="lock_title">Enter PIN</string>
+    <string name="lock_subtitle">Unlock with your PIN</string>
+    <string name="unlocked_title">Unlocked</string>
+    <string name="lock_again">Lock again</string>
+    <string name="wrong_pin">Wrong PIN</string>
+    <string name="pins_do_not_match">PINs do not match</string>
+    <string name="pin_length_error">PIN must be 4–6 digits</string>
+    <string name="key_backspace">Backspace</string>
+    <string name="key_submit">OK</string>
+</resources>
