@@ -97,7 +97,7 @@ fun PinPad(
                         enabled = enabled,
                         modifier = Modifier
                             .weight(1f)
-                            .aspectRatio(1.4f)
+                            .aspectRatio(1.6f)
                             .semantics {
                                 contentDescription = when (key) {
                                     "⌫" -> backspaceLabel
