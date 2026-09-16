@@ -7,8 +7,11 @@ import com.example.pinalarmlock.alarm.AlarmPlayer
 import com.example.pinalarmlock.data.PinRepository
 import com.example.pinalarmlock.data.PinRepositoryLogic
 import com.example.pinalarmlock.session.LockSession
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -26,6 +29,9 @@ class LockViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LockUiState())
     val uiState: StateFlow<LockUiState> = _uiState.asStateFlow()
+
+    private val _gateUnlockedEvents = MutableSharedFlow<Unit>(replay = 1)
+    val gateUnlockedEvents: SharedFlow<Unit> = _gateUnlockedEvents.asSharedFlow()
 
     private var pendingSetupPin: String = ""
 
@@ -115,6 +121,7 @@ class LockViewModel(
                         stopAlarm()
                         unlockSession()
                         if (isGate) {
+                            _gateUnlockedEvents.tryEmit(Unit)
                             onGateUnlocked()
                             _uiState.update {
                                 it.copy(

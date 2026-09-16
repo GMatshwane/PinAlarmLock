@@ -2,6 +2,8 @@ package com.example.pinalarmlock.ui
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -171,6 +173,22 @@ class LockViewModelTest {
         assertTrue(unlocked)
         assertTrue(finished)
         assertEquals(Dest.Locked, vm.uiState.value.dest)
+    }
+
+    @Test
+    fun gateCorrectPinEmitsUnlockEvent() = runTest {
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            isGate = true,
+        )
+        vm.bootstrap()
+        val unlocked = async { vm.gateUnlockedEvents.first() }
+
+        enter(vm, "5555")
+        vm.onSubmit()
+
+        unlocked.await()
     }
 
     @Test

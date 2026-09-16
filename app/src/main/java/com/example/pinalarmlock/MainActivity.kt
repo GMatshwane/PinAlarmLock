@@ -16,6 +16,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.pinalarmlock.alarm.AlarmPlayer
 import com.example.pinalarmlock.data.PinRepository
 import com.example.pinalarmlock.data.ProtectedAppsRepository
@@ -26,6 +27,7 @@ import com.example.pinalarmlock.ui.LockViewModel
 import com.example.pinalarmlock.ui.home.HomeViewModel
 import com.example.pinalarmlock.ui.navigation.AppNavHost
 import com.example.pinalarmlock.ui.theme.PinAlarmLockTheme
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -57,10 +59,17 @@ class MainActivity : ComponentActivity() {
                 alarmPlayer = alarmPlayer,
                 session = app.lockSession,
                 isGate = isGate,
-                onGateUnlocked = { finish() },
+                onGateUnlocked = {},
             ),
         )[LockViewModel::class.java]
         lockViewModel.bootstrap()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                lockViewModel.gateUnlockedEvents.collect {
+                    finish()
+                }
+            }
+        }
 
         val homeViewModel = ViewModelProvider(
             this,
