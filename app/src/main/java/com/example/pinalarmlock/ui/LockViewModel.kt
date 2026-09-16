@@ -163,9 +163,6 @@ class LockViewModel(
         }
     }
 
-    @Deprecated("Locking is controlled by LockSession")
-    fun onLockAgain() = Unit
-
     override fun onCleared() {
         stopAlarm()
         super.onCleared()
