@@ -2,6 +2,9 @@
 .gradle/
 build/
 
+# Local git worktrees
+.worktrees/
+
 # Local configuration file (sdk path, etc)
 local.properties
 
