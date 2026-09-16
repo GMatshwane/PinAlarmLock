@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.pinalarmlock.alarm.AlarmPlayer
 import com.example.pinalarmlock.data.PinRepository
 import com.example.pinalarmlock.data.PinRepositoryLogic
+import com.example.pinalarmlock.session.LockSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,10 @@ class LockViewModel(
     private val verifyPin: suspend (String) -> Boolean,
     private val startAlarm: () -> Unit,
     private val stopAlarm: () -> Unit,
+    private val isSessionUnlocked: () -> Boolean = { false },
+    private val unlockSession: () -> Unit = {},
+    private val isGate: Boolean = false,
+    private val onGateUnlocked: () -> Unit = {},
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LockUiState())
     val uiState: StateFlow<LockUiState> = _uiState.asStateFlow()
@@ -26,7 +31,11 @@ class LockViewModel(
 
     fun bootstrap() {
         viewModelScope.launch {
-            val dest = if (hasPin()) Dest.Locked else Dest.SetupEnter
+            val dest = when {
+                !hasPin() -> Dest.SetupEnter
+                isGate || !isSessionUnlocked() -> Dest.Locked
+                else -> Dest.Unlocked
+            }
             _uiState.update {
                 it.copy(dest = dest, enteredPin = "", errorMessage = null)
             }
@@ -87,6 +96,7 @@ class LockViewModel(
                 }
                 viewModelScope.launch {
                     setPin(pin)
+                    unlockSession()
                     pendingSetupPin = ""
                     stopAlarm()
                     _uiState.update {
@@ -103,13 +113,26 @@ class LockViewModel(
                 viewModelScope.launch {
                     if (verifyPin(pin)) {
                         stopAlarm()
-                        _uiState.update {
-                            it.copy(
-                                dest = Dest.Unlocked,
-                                enteredPin = "",
-                                errorMessage = null,
-                                alarmActive = false,
-                            )
+                        unlockSession()
+                        if (isGate) {
+                            onGateUnlocked()
+                            _uiState.update {
+                                it.copy(
+                                    dest = Dest.Locked,
+                                    enteredPin = "",
+                                    errorMessage = null,
+                                    alarmActive = false,
+                                )
+                            }
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    dest = Dest.Unlocked,
+                                    enteredPin = "",
+                                    errorMessage = null,
+                                    alarmActive = false,
+                                )
+                            }
                         }
                     } else {
                         startAlarm()
@@ -129,11 +152,10 @@ class LockViewModel(
         }
     }
 
-    fun onLockAgain() {
+    fun onAppBackgrounded() {
         stopAlarm()
         _uiState.update {
             it.copy(
-                dest = Dest.Locked,
                 enteredPin = "",
                 errorMessage = null,
                 alarmActive = false,
@@ -141,18 +163,8 @@ class LockViewModel(
         }
     }
 
-    fun onAppBackgrounded() {
-        stopAlarm()
-        val dest = _uiState.value.dest
-        _uiState.update {
-            it.copy(
-                dest = if (dest == Dest.Unlocked) Dest.Locked else dest,
-                enteredPin = "",
-                errorMessage = null,
-                alarmActive = false,
-            )
-        }
-    }
+    @Deprecated("Locking is controlled by LockSession")
+    fun onLockAgain() = Unit
 
     override fun onCleared() {
         stopAlarm()
@@ -170,6 +182,9 @@ class LockViewModel(
         fun factory(
             pinRepository: PinRepository,
             alarmPlayer: AlarmPlayer,
+            session: LockSession,
+            isGate: Boolean,
+            onGateUnlocked: () -> Unit,
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -182,8 +197,23 @@ class LockViewModel(
                     verifyPin = pinRepository::verifyPin,
                     startAlarm = alarmPlayer::start,
                     stopAlarm = alarmPlayer::stop,
+                    isSessionUnlocked = { session.isUnlocked },
+                    unlockSession = { session.unlock() },
+                    isGate = isGate,
+                    onGateUnlocked = onGateUnlocked,
                 ) as T
             }
         }
+
+        fun factory(
+            pinRepository: PinRepository,
+            alarmPlayer: AlarmPlayer,
+        ): ViewModelProvider.Factory = factory(
+            pinRepository,
+            alarmPlayer,
+            session = LockSession(),
+            isGate = false,
+            onGateUnlocked = {},
+        )
     }
 }
