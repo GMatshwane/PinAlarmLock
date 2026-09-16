@@ -208,16 +208,5 @@ class LockViewModel(
                 ) as T
             }
         }
-
-        fun factory(
-            pinRepository: PinRepository,
-            alarmPlayer: AlarmPlayer,
-        ): ViewModelProvider.Factory = factory(
-            pinRepository,
-            alarmPlayer,
-            session = LockSession(),
-            isGate = false,
-            onGateUnlocked = {},
-        )
     }
 }

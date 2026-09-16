@@ -2,6 +2,7 @@ package com.example.pinalarmlock
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -38,11 +39,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        if (Build.VERSION.SDK_INT >= 33) {
+        val isGate = intent.getBooleanExtra(EXTRA_GATE, false)
+        if (!isGate && Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        val isGate = intent.getBooleanExtra(EXTRA_GATE, false)
         val app = application as PinAlarmLockApp
         val pinRepository = PinRepository(applicationContext)
         if (isGate) {
@@ -71,19 +75,24 @@ class MainActivity : ComponentActivity() {
             }
         }
 
+        val appContext = applicationContext
+        val appPackageManager = appContext.packageManager
         val homeViewModel = ViewModelProvider(
             this,
             HomeViewModel.factory(
                 protectedApps = protectedApps,
-                loadApps = { LaunchableApps.load(packageManager) },
-                hasUsageAccess = { AppLockPermissions.hasUsageAccess(this) },
-                hasOverlay = { AppLockPermissions.hasOverlay(this) },
-                onEnrolmentChanged = { WatchController.syncAsync(this) },
+                loadApps = { LaunchableApps.load(appPackageManager) },
+                hasUsageAccess = { AppLockPermissions.hasUsageAccess(appContext) },
+                hasOverlay = { AppLockPermissions.hasOverlay(appContext) },
+                onEnrolmentChanged = { WatchController.syncAsync(appContext) },
             ),
         )[HomeViewModel::class.java]
 
         lifecycle.addObserver(
             LifecycleEventObserver { _, event ->
+                if (event == Lifecycle.Event.ON_START && !isGate && !app.lockSession.isUnlocked) {
+                    lockViewModel.bootstrap()
+                }
                 if (event == Lifecycle.Event.ON_STOP && !isChangingConfigurations) {
                     lockViewModel.onAppBackgrounded()
                 }

@@ -202,6 +202,27 @@ class LockViewModelTest {
     }
 
     @Test
+    fun bootstrapAfterScreenOffRelocksEnrolment() = runTest {
+        var sessionUnlocked = false
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            isSessionUnlocked = { sessionUnlocked },
+            unlockSession = { sessionUnlocked = true },
+        )
+        vm.bootstrap()
+        enter(vm, "5555")
+        vm.onSubmit()
+        assertEquals(Dest.Unlocked, vm.uiState.value.dest)
+
+        vm.onAppBackgrounded()
+        sessionUnlocked = false
+        vm.bootstrap()
+
+        assertEquals(Dest.Locked, vm.uiState.value.dest)
+    }
+
+    @Test
     fun backgroundDuringSetupDoesNotSkipToLocked() = runTest {
         val vm = viewModel(hasPin = false)
         vm.bootstrap()
