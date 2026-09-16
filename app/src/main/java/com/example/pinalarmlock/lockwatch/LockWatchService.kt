@@ -28,11 +28,15 @@ import kotlinx.coroutines.launch
 
 class LockWatchService : Service() {
     private val handler = Handler(Looper.getMainLooper())
-    private var lastEventTime = System.currentTimeMillis()
+    private val eventCursor = UsageEventCursor(System.currentTimeMillis())
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var started = false
 
     @Volatile
     private var enrolled: Set<String> = emptySet()
+
+    @Volatile
+    private var enrolledReady = false
 
     private val poll = object : Runnable {
         override fun run() {
@@ -86,29 +90,36 @@ class LockWatchService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-        refreshEnrolled()
-        registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
-        handler.post(poll)
+        if (!started) {
+            registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
+            started = true
+            handler.post(poll)
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
         handler.removeCallbacks(poll)
-        unregisterReceiver(screenOff)
+        if (started) {
+            unregisterReceiver(screenOff)
+        }
+        started = false
         super.onDestroy()
     }
 
     private fun refreshEnrolled() {
         scope.launch {
             enrolled = ProtectedAppsRepository(applicationContext).list()
+            enrolledReady = true
         }
     }
 
     private fun pollOnce() {
+        if (!enrolledReady) return
         val usm = getSystemService(UsageStatsManager::class.java) ?: return
         val now = System.currentTimeMillis()
-        val events = usm.queryEvents(lastEventTime, now)
-        lastEventTime = now
+        val window = eventCursor.advanceIfReady(enrolledReady, now) ?: return
+        val events = usm.queryEvents(window.start, window.end)
         val event = UsageEvents.Event()
         var lastPkg: String? = null
         while (events.hasNextEvent()) {
