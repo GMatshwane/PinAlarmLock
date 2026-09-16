@@ -40,4 +40,8 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    companion object {
+        const val EXTRA_GATE = "extra_gate"
+    }
 }

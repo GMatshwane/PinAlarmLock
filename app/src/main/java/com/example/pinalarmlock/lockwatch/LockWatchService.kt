@@ -5,15 +5,48 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.app.usage.UsageEvents
+import android.app.usage.UsageStatsManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.example.pinalarmlock.MainActivity
+import com.example.pinalarmlock.PinAlarmLockApp
 import com.example.pinalarmlock.R
+import com.example.pinalarmlock.data.ProtectedAppsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class LockWatchService : Service() {
+    private val handler = Handler(Looper.getMainLooper())
+    private var lastEventTime = System.currentTimeMillis()
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Volatile
+    private var enrolled: Set<String> = emptySet()
+
+    private val poll = object : Runnable {
+        override fun run() {
+            refreshEnrolled()
+            pollOnce()
+            handler.postDelayed(this, POLL_MS)
+        }
+    }
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            (application as PinAlarmLockApp).lockSession.lock()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -53,7 +86,49 @@ class LockWatchService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        refreshEnrolled()
+        registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        handler.post(poll)
         return START_STICKY
+    }
+
+    override fun onDestroy() {
+        handler.removeCallbacks(poll)
+        unregisterReceiver(screenOff)
+        super.onDestroy()
+    }
+
+    private fun refreshEnrolled() {
+        scope.launch {
+            enrolled = ProtectedAppsRepository(applicationContext).list()
+        }
+    }
+
+    private fun pollOnce() {
+        val usm = getSystemService(UsageStatsManager::class.java) ?: return
+        val now = System.currentTimeMillis()
+        val events = usm.queryEvents(lastEventTime, now)
+        lastEventTime = now
+        val event = UsageEvents.Event()
+        var lastPkg: String? = null
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (ForegroundEvent.isForegroundEvent(event.eventType)) {
+                lastPkg = event.packageName
+            }
+        }
+        val packageName = lastPkg ?: return
+        maybeGate(packageName)
+    }
+
+    private fun maybeGate(packageName: String) {
+        val session = (application as PinAlarmLockApp).lockSession
+        if (!session.shouldGate(packageName, enrolled)) return
+        val intent = Intent(this, MainActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+            putExtra(MainActivity.EXTRA_GATE, true)
+        }
+        startActivity(intent)
     }
 
     companion object {
