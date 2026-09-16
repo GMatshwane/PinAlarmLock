@@ -1,6 +1,8 @@
 package com.example.pinalarmlock.ui.home
 
 import com.example.pinalarmlock.lockwatch.LaunchableApp
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -16,9 +18,11 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest {
+    private val testDispatcher = UnconfinedTestDispatcher()
+
     @Before
     fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        Dispatchers.setMain(testDispatcher)
     }
 
     @After
@@ -33,6 +37,36 @@ class HomeViewModelTest {
         assertFalse(vm.uiState.value.canEnrol)
         assertFalse(vm.uiState.value.usageGranted)
         assertTrue(vm.uiState.value.overlayGranted)
+    }
+
+    @Test
+    fun loadsInstalledAppsOffTheMainDispatcher() = runTest {
+        var dispatches = 0
+        val recording = object : CoroutineDispatcher() {
+            override fun dispatch(context: CoroutineContext, block: Runnable) {
+                dispatches++
+                block.run()
+            }
+        }
+        var loadedOnIo = false
+        val vm = HomeViewModel(
+            listEnrolled = { emptySet() },
+            add = {},
+            remove = {},
+            loadApps = {
+                loadedOnIo = dispatches > 0
+                listOf(LaunchableApp("com.whatsapp", "WhatsApp"))
+            },
+            hasUsageAccess = { true },
+            hasOverlay = { true },
+            onEnrolmentChanged = {},
+            ioDispatcher = recording,
+        )
+
+        vm.refresh()
+
+        assertTrue(loadedOnIo)
+        assertEquals(1, vm.uiState.value.apps.size)
     }
 
     @Test
@@ -74,5 +108,6 @@ class HomeViewModelTest {
         hasUsageAccess = { usage },
         hasOverlay = { overlay },
         onEnrolmentChanged = onChanged,
+        ioDispatcher = testDispatcher,
     )
 }

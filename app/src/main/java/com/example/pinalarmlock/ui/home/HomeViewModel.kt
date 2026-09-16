@@ -5,10 +5,13 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.pinalarmlock.data.ProtectedAppsRepository
 import com.example.pinalarmlock.lockwatch.LaunchableApp
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AppRow(
     val packageName: String,
@@ -32,6 +35,7 @@ class HomeViewModel(
     private val hasUsageAccess: () -> Boolean,
     private val hasOverlay: () -> Boolean,
     private val onEnrolmentChanged: () -> Unit,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -39,13 +43,15 @@ class HomeViewModel(
     fun refresh() {
         viewModelScope.launch {
             val enrolled = listEnrolled()
-            _uiState.value = HomeUiState(
-                usageGranted = hasUsageAccess(),
-                overlayGranted = hasOverlay(),
-                apps = loadApps().map { app ->
-                    AppRow(app.packageName, app.label, app.packageName in enrolled)
-                },
-            )
+            _uiState.value = withContext(ioDispatcher) {
+                HomeUiState(
+                    usageGranted = hasUsageAccess(),
+                    overlayGranted = hasOverlay(),
+                    apps = loadApps().map { app ->
+                        AppRow(app.packageName, app.label, app.packageName in enrolled)
+                    },
+                )
+            }
         }
     }
 
