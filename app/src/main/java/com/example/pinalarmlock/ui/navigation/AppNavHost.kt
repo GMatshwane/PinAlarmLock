@@ -12,13 +12,18 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.pinalarmlock.ui.Dest
 import com.example.pinalarmlock.ui.LockViewModel
+import com.example.pinalarmlock.ui.home.HomeScreen
+import com.example.pinalarmlock.ui.home.HomeUiState
 import com.example.pinalarmlock.ui.lock.LockScreen
 import com.example.pinalarmlock.ui.setup.SetupScreen
-import com.example.pinalarmlock.ui.unlocked.UnlockedScreen
 
 @Composable
 fun AppNavHost(
     viewModel: LockViewModel,
+    homeState: HomeUiState = HomeUiState(),
+    onOpenUsageAccess: () -> Unit = {},
+    onOpenOverlay: () -> Unit = {},
+    onToggle: (String, Boolean) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -46,7 +51,12 @@ fun AppNavHost(
                     onBackspace = viewModel::onBackspace,
                     onSubmit = viewModel::onSubmit,
                 )
-                Dest.Unlocked -> UnlockedScreen(onLockAgain = viewModel::onLockAgain)
+                Dest.Unlocked -> HomeScreen(
+                    state = homeState,
+                    onOpenUsageAccess = onOpenUsageAccess,
+                    onOpenOverlay = onOpenOverlay,
+                    onToggle = onToggle,
+                )
             }
         }
     }

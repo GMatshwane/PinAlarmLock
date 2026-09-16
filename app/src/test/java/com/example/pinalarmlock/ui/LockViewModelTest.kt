@@ -2,6 +2,8 @@ package com.example.pinalarmlock.ui
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -40,9 +42,21 @@ class LockViewModelTest {
     }
 
     @Test
-    fun setupConfirmMatchUnlocksAndSavesPin() = runTest {
+    fun bootstrapGoesToUnlockedWhenSessionAlreadyUnlocked() = runTest {
+        val vm = viewModel(hasPin = true, isSessionUnlocked = { true })
+        vm.bootstrap()
+        assertEquals(Dest.Unlocked, vm.uiState.value.dest)
+    }
+
+    @Test
+    fun setupConfirmMatchUnlocksSessionAndSavesPin() = runTest {
         val saved = mutableListOf<String>()
-        val vm = viewModel(hasPin = false, onSetPin = { saved += it })
+        var unlocked = false
+        val vm = viewModel(
+            hasPin = false,
+            onSetPin = { saved += it },
+            unlockSession = { unlocked = true },
+        )
         vm.bootstrap()
         enter(vm, "2468")
         vm.onSubmit()
@@ -51,6 +65,7 @@ class LockViewModelTest {
         vm.onSubmit()
         assertEquals(Dest.Unlocked, vm.uiState.value.dest)
         assertEquals(listOf("2468"), saved)
+        assertTrue(unlocked)
     }
 
     @Test
@@ -127,27 +142,84 @@ class LockViewModelTest {
     }
 
     @Test
-    fun lockAgainReturnsToLocked() = runTest {
+    fun correctPinUnlocksSessionOnHome() = runTest {
+        var unlocked = false
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            unlockSession = { unlocked = true },
+        )
+        vm.bootstrap()
+        enter(vm, "5555")
+        vm.onSubmit()
+        assertTrue(unlocked)
+        assertEquals(Dest.Unlocked, vm.uiState.value.dest)
+    }
+
+    @Test
+    fun gateCorrectPinUnlocksSessionAndFinishesWithoutEnrolment() = runTest {
+        var unlocked = false
+        var finished = false
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            unlockSession = { unlocked = true },
+            isGate = true,
+            onGateUnlocked = { finished = true },
+        )
+        vm.bootstrap()
+        enter(vm, "5555")
+        vm.onSubmit()
+        assertTrue(unlocked)
+        assertTrue(finished)
+        assertEquals(Dest.Locked, vm.uiState.value.dest)
+    }
+
+    @Test
+    fun gateCorrectPinEmitsUnlockEvent() = runTest {
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            isGate = true,
+        )
+        vm.bootstrap()
+        val unlocked = async { vm.gateUnlockedEvents.first() }
+
+        enter(vm, "5555")
+        vm.onSubmit()
+
+        unlocked.await()
+    }
+
+    @Test
+    fun backgroundDoesNotRelockEnrolment() = runTest {
         val vm = viewModel(hasPin = true, verify = { true })
         vm.bootstrap()
         enter(vm, "5555")
         vm.onSubmit()
-        vm.onLockAgain()
-        assertEquals(Dest.Locked, vm.uiState.value.dest)
-        assertEquals("", vm.uiState.value.enteredPin)
+        vm.onAppBackgrounded()
+        assertEquals(Dest.Unlocked, vm.uiState.value.dest)
     }
 
     @Test
-    fun backgroundRelocksUnlockedScreen() = runTest {
-        val alarms = mutableListOf<String>()
-        val vm = viewModel(hasPin = true, verify = { true }, alarms = alarms)
+    fun bootstrapAfterScreenOffRelocksEnrolment() = runTest {
+        var sessionUnlocked = false
+        val vm = viewModel(
+            hasPin = true,
+            verify = { true },
+            isSessionUnlocked = { sessionUnlocked },
+            unlockSession = { sessionUnlocked = true },
+        )
         vm.bootstrap()
         enter(vm, "5555")
         vm.onSubmit()
+        assertEquals(Dest.Unlocked, vm.uiState.value.dest)
+
         vm.onAppBackgrounded()
+        sessionUnlocked = false
+        vm.bootstrap()
+
         assertEquals(Dest.Locked, vm.uiState.value.dest)
-        assertEquals("", vm.uiState.value.enteredPin)
-        assertTrue(alarms.contains("stop"))
     }
 
     @Test
@@ -169,11 +241,19 @@ class LockViewModelTest {
         verify: (String) -> Boolean = { false },
         onSetPin: (String) -> Unit = {},
         alarms: MutableList<String> = mutableListOf(),
+        isSessionUnlocked: () -> Boolean = { false },
+        unlockSession: () -> Unit = {},
+        isGate: Boolean = false,
+        onGateUnlocked: () -> Unit = {},
     ): LockViewModel = LockViewModel(
         hasPin = { hasPin },
         setPin = onSetPin,
         verifyPin = verify,
         startAlarm = { alarms += "start" },
         stopAlarm = { alarms += "stop" },
+        isSessionUnlocked = isSessionUnlocked,
+        unlockSession = unlockSession,
+        isGate = isGate,
+        onGateUnlocked = onGateUnlocked,
     )
 }
