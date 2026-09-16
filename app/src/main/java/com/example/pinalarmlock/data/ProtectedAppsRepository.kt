@@ -5,7 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 class ProtectedAppsRepository(
     private val dataStore: DataStore<Preferences>,
@@ -18,6 +20,9 @@ class ProtectedAppsRepository(
             dataStore.edit { prefs -> prefs[PACKAGES_KEY] = value }
         },
     )
+
+    val packages: Flow<Set<String>> =
+        dataStore.data.map { prefs -> prefs[PACKAGES_KEY] ?: emptySet() }
 
     suspend fun list(): Set<String> = logic.list()
 

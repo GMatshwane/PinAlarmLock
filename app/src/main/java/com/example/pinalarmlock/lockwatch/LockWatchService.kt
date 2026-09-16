@@ -7,15 +7,12 @@ import android.app.PendingIntent
 import android.app.Service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
-import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.example.pinalarmlock.MainActivity
 import com.example.pinalarmlock.PinAlarmLockApp
@@ -24,12 +21,14 @@ import com.example.pinalarmlock.data.ProtectedAppsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class LockWatchService : Service() {
-    private val handler = Handler(Looper.getMainLooper())
+    private var pollThread: HandlerThread? = null
+    private var pollHandler: Handler? = null
     private val eventCursor = UsageEventCursor(System.currentTimeMillis())
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var started = false
 
     @Volatile
@@ -40,14 +39,8 @@ class LockWatchService : Service() {
 
     private val poll = object : Runnable {
         override fun run() {
-            refreshEnrolled()
             pollOnce()
-            handler.postDelayed(this, POLL_MS)
-        }
-    }
-    private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            (application as PinAlarmLockApp).lockSession.lock()
+            pollHandler?.postDelayed(this, POLL_MS)
         }
     }
 
@@ -55,6 +48,7 @@ class LockWatchService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        observeEnrolled()
         if (Build.VERSION.SDK_INT >= 26) {
             val nm = getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(
@@ -91,44 +85,48 @@ class LockWatchService : Service() {
             startForeground(NOTIFICATION_ID, notification)
         }
         if (!started) {
-            registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
             started = true
-            handler.post(poll)
+            val thread = HandlerThread(POLL_THREAD_NAME).also { it.start() }
+            pollThread = thread
+            pollHandler = Handler(thread.looper).also { it.post(poll) }
         }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(poll)
-        if (started) {
-            unregisterReceiver(screenOff)
-        }
+        pollHandler?.removeCallbacks(poll)
+        pollHandler = null
+        pollThread?.quitSafely()
+        pollThread = null
         started = false
+        scope.cancel()
         super.onDestroy()
     }
 
-    private fun refreshEnrolled() {
+    private fun observeEnrolled() {
+        val repository = ProtectedAppsRepository(applicationContext)
         scope.launch {
-            enrolled = ProtectedAppsRepository(applicationContext).list()
-            enrolledReady = true
+            repository.packages.collect { packages ->
+                enrolled = packages
+                enrolledReady = true
+            }
         }
     }
 
     private fun pollOnce() {
-        if (!enrolledReady) return
         val usm = getSystemService(UsageStatsManager::class.java) ?: return
         val now = System.currentTimeMillis()
-        val window = eventCursor.advanceIfReady(enrolledReady, now) ?: return
+        val window = eventCursor.windowIfReady(enrolledReady, now) ?: return
         val events = usm.queryEvents(window.start, window.end)
         val event = UsageEvents.Event()
-        var lastPkg: String? = null
+        val observed = mutableListOf<ObservedEvent>()
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
             if (ForegroundEvent.isForegroundEvent(event.eventType)) {
-                lastPkg = event.packageName
+                observed += ObservedEvent(event.timeStamp, event.packageName)
             }
         }
-        val packageName = lastPkg ?: return
+        val packageName = eventCursor.accept(observed).lastOrNull()?.packageName ?: return
         maybeGate(packageName)
     }
 
@@ -146,5 +144,6 @@ class LockWatchService : Service() {
         const val CHANNEL_ID = "app_lock"
         const val NOTIFICATION_ID = 42
         const val POLL_MS = 250L
+        const val POLL_THREAD_NAME = "lock-watch-poll"
     }
 }
