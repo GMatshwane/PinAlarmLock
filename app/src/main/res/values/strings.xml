@@ -6,8 +6,12 @@
     <string name="setup_confirm_subtitle">Enter the same PIN again</string>
     <string name="lock_title">Enter PIN</string>
     <string name="lock_subtitle">Unlock with your PIN</string>
-    <string name="unlocked_title">Unlocked</string>
-    <string name="lock_again">Lock again</string>
+    <string name="home_title">Protected apps</string>
+    <string name="permission_usage">Allow usage access</string>
+    <string name="permission_overlay">Allow display over other apps</string>
+    <string name="permissions_needed">Grant both permissions to enrol apps.</string>
+    <string name="watch_notification_title">PinAlarmLock is protecting apps</string>
+    <string name="watch_notification_text">Tap to manage protected apps</string>
     <string name="wrong_pin">Wrong PIN</string>
     <string name="pins_do_not_match">PINs do not match</string>
     <string name="pin_length_error">PIN must be 4–6 digits</string>
