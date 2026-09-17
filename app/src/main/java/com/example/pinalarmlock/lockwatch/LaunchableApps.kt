@@ -24,12 +24,13 @@ object LaunchableApps {
     fun load(pm: PackageManager): List<LaunchableApp> {
         val launch = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         val homes = homePackages(pm)
-        val raw = pm.queryIntentActivities(launch, 0).map { ri ->
-            LaunchableApp(
-                packageName = ri.activityInfo.packageName,
-                label = ri.loadLabel(pm).toString(),
-            )
-        }
+        val raw =
+            pm.queryIntentActivities(launch, 0).map { ri ->
+                LaunchableApp(
+                    packageName = ri.activityInfo.packageName,
+                    label = ri.loadLabel(pm).toString(),
+                )
+            }
         val enrolable = EnrolmentPolicy.filterEnrolable(raw.map { it.packageName }, homes).toSet()
         return sorted(raw.filter { it.packageName in enrolable }.distinctBy { it.packageName })
     }

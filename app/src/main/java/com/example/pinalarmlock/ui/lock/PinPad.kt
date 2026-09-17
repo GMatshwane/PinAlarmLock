@@ -44,16 +44,17 @@ fun PinDots(
         repeat(maxLength) { index ->
             val filled = index < length
             Box(
-                modifier = Modifier
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (filled) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.outlineVariant
-                        },
-                    ),
+                modifier =
+                    Modifier
+                        .size(16.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (filled) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.outlineVariant
+                            },
+                        ),
             )
         }
     }
@@ -69,12 +70,13 @@ fun PinPad(
 ) {
     val backspaceLabel = stringResource(R.string.key_backspace)
     val submitLabel = stringResource(R.string.key_submit)
-    val rows = listOf(
-        listOf("1", "2", "3"),
-        listOf("4", "5", "6"),
-        listOf("7", "8", "9"),
-        listOf("⌫", "0", "OK"),
-    )
+    val rows =
+        listOf(
+            listOf("1", "2", "3"),
+            listOf("4", "5", "6"),
+            listOf("7", "8", "9"),
+            listOf("⌫", "0", "OK"),
+        )
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -95,17 +97,19 @@ fun PinPad(
                             }
                         },
                         enabled = enabled,
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(1.6f)
-                            .semantics {
-                                contentDescription = when (key) {
-                                    "⌫" -> backspaceLabel
-                                    "OK" -> submitLabel
-                                    else -> key
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .aspectRatio(1.6f)
+                                .semantics {
+                                    contentDescription =
+                                        when (key) {
+                                            "⌫" -> backspaceLabel
+                                            "OK" -> submitLabel
+                                            else -> key
+                                        }
                                 }
-                            }
-                            .testTag("key$key"),
+                                .testTag("key$key"),
                     ) {
                         Text(
                             text = key,

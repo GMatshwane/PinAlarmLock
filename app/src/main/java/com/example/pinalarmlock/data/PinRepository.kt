@@ -15,18 +15,19 @@ class PinRepository(
 ) {
     constructor(context: Context) : this(context.pinDataStore)
 
-    private val logic = PinRepositoryLogic(
-        readSaltAndHash = {
-            val prefs = dataStore.data.first()
-            prefs[SALT_KEY] to prefs[HASH_KEY]
-        },
-        writeSaltAndHash = { salt, hash ->
-            dataStore.edit { prefs ->
-                prefs[SALT_KEY] = salt
-                prefs[HASH_KEY] = hash
-            }
-        },
-    )
+    private val logic =
+        PinRepositoryLogic(
+            readSaltAndHash = {
+                val prefs = dataStore.data.first()
+                prefs[SALT_KEY] to prefs[HASH_KEY]
+            },
+            writeSaltAndHash = { salt, hash ->
+                dataStore.edit { prefs ->
+                    prefs[SALT_KEY] = salt
+                    prefs[HASH_KEY] = hash
+                }
+            },
+        )
 
     suspend fun hasPin(): Boolean = logic.hasPin()
 

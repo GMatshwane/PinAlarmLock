@@ -20,16 +20,26 @@ object PinHasher {
 
     fun decode(value: String): ByteArray = decoder.decode(value)
 
-    fun digestPin(pin: String, salt: ByteArray): ByteArray {
+    fun digestPin(
+        pin: String,
+        salt: ByteArray,
+    ): ByteArray {
         val digest = MessageDigest.getInstance("SHA-256")
         digest.update(salt)
         digest.update(pin.toByteArray(Charsets.UTF_8))
         return digest.digest()
     }
 
-    fun hashPin(pin: String, salt: ByteArray): String = encode(digestPin(pin, salt))
+    fun hashPin(
+        pin: String,
+        salt: ByteArray,
+    ): String = encode(digestPin(pin, salt))
 
-    fun verify(pin: String, saltBase64: String, hashBase64: String): Boolean {
+    fun verify(
+        pin: String,
+        saltBase64: String,
+        hashBase64: String,
+    ): Boolean {
         return try {
             val expected = decode(hashBase64)
             val actual = digestPin(pin, decode(saltBase64))

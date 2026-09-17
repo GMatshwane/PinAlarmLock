@@ -13,11 +13,15 @@ class PinAlarmLockApp : Application() {
     val lockSession = LockSession(EnrolmentPolicy.OWN_PACKAGE)
 
     /** Owned here, not by the watcher, so the session still re-locks while no service runs. */
-    private val screenOff = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            lockSession.lock()
+    private val screenOff =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                lockSession.lock()
+            }
         }
-    }
 
     override fun onCreate() {
         super.onCreate()

@@ -29,13 +29,14 @@ class EnrolmentPolicyTest {
 
     @Test
     fun filterEnrolableDropsExcludedAndKeepsOrder() {
-        val input = listOf(
-            EnrolmentPolicy.OWN_PACKAGE,
-            "com.whatsapp",
-            "com.android.settings",
-            "com.google.android.apps.photos",
-            launcher,
-        )
+        val input =
+            listOf(
+                EnrolmentPolicy.OWN_PACKAGE,
+                "com.whatsapp",
+                "com.android.settings",
+                "com.google.android.apps.photos",
+                launcher,
+            )
         assertEquals(
             listOf("com.whatsapp", "com.google.android.apps.photos"),
             EnrolmentPolicy.filterEnrolable(input, setOf(launcher)),

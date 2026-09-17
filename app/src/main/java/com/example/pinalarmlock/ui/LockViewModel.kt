@@ -37,11 +37,12 @@ class LockViewModel(
 
     fun bootstrap() {
         viewModelScope.launch {
-            val dest = when {
-                !hasPin() -> Dest.SetupEnter
-                isGate || !isSessionUnlocked() -> Dest.Locked
-                else -> Dest.Unlocked
-            }
+            val dest =
+                when {
+                    !hasPin() -> Dest.SetupEnter
+                    isGate || !isSessionUnlocked() -> Dest.Locked
+                    else -> Dest.Unlocked
+                }
             _uiState.update {
                 it.copy(dest = dest, enteredPin = "", errorMessage = null)
             }
@@ -175,8 +176,7 @@ class LockViewModel(
         super.onCleared()
     }
 
-    private fun isPinEntryDest(dest: Dest): Boolean =
-        dest == Dest.SetupEnter || dest == Dest.SetupConfirm || dest == Dest.Locked
+    private fun isPinEntryDest(dest: Dest): Boolean = dest == Dest.SetupEnter || dest == Dest.SetupConfirm || dest == Dest.Locked
 
     companion object {
         const val WRONG_PIN = "Wrong PIN"
@@ -189,24 +189,25 @@ class LockViewModel(
             session: LockSession,
             isGate: Boolean,
             onGateUnlocked: () -> Unit,
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                require(modelClass.isAssignableFrom(LockViewModel::class.java)) {
-                    "Unknown ViewModel class $modelClass"
+        ): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    require(modelClass.isAssignableFrom(LockViewModel::class.java)) {
+                        "Unknown ViewModel class $modelClass"
+                    }
+                    return LockViewModel(
+                        hasPin = pinRepository::hasPin,
+                        setPin = pinRepository::setPin,
+                        verifyPin = pinRepository::verifyPin,
+                        startAlarm = alarmPlayer::start,
+                        stopAlarm = alarmPlayer::stop,
+                        isSessionUnlocked = { session.isUnlocked },
+                        unlockSession = { session.unlock() },
+                        isGate = isGate,
+                        onGateUnlocked = onGateUnlocked,
+                    ) as T
                 }
-                return LockViewModel(
-                    hasPin = pinRepository::hasPin,
-                    setPin = pinRepository::setPin,
-                    verifyPin = pinRepository::verifyPin,
-                    startAlarm = alarmPlayer::start,
-                    stopAlarm = alarmPlayer::stop,
-                    isSessionUnlocked = { session.isUnlocked },
-                    unlockSession = { session.unlock() },
-                    isGate = isGate,
-                    onGateUnlocked = onGateUnlocked,
-                ) as T
             }
-        }
     }
 }

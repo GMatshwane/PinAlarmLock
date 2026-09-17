@@ -29,9 +29,10 @@ fun AppNavHost(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     Surface(modifier = modifier.fillMaxSize()) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .systemBarsPadding(),
         ) {
             when (state.dest) {
                 Dest.Loading -> {
@@ -39,24 +40,27 @@ fun AppNavHost(
                         CircularProgressIndicator()
                     }
                 }
-                Dest.SetupEnter, Dest.SetupConfirm -> SetupScreen(
-                    state = state,
-                    onDigit = viewModel::onDigit,
-                    onBackspace = viewModel::onBackspace,
-                    onSubmit = viewModel::onSubmit,
-                )
-                Dest.Locked -> LockScreen(
-                    state = state,
-                    onDigit = viewModel::onDigit,
-                    onBackspace = viewModel::onBackspace,
-                    onSubmit = viewModel::onSubmit,
-                )
-                Dest.Unlocked -> HomeScreen(
-                    state = homeState,
-                    onOpenUsageAccess = onOpenUsageAccess,
-                    onOpenOverlay = onOpenOverlay,
-                    onToggle = onToggle,
-                )
+                Dest.SetupEnter, Dest.SetupConfirm ->
+                    SetupScreen(
+                        state = state,
+                        onDigit = viewModel::onDigit,
+                        onBackspace = viewModel::onBackspace,
+                        onSubmit = viewModel::onSubmit,
+                    )
+                Dest.Locked ->
+                    LockScreen(
+                        state = state,
+                        onDigit = viewModel::onDigit,
+                        onBackspace = viewModel::onBackspace,
+                        onSubmit = viewModel::onSubmit,
+                    )
+                Dest.Unlocked ->
+                    HomeScreen(
+                        state = homeState,
+                        onOpenUsageAccess = onOpenUsageAccess,
+                        onOpenOverlay = onOpenOverlay,
+                        onToggle = onToggle,
+                    )
             }
         }
     }

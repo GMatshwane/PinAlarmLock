@@ -37,12 +37,13 @@ class LockWatchService : Service() {
     @Volatile
     private var enrolledReady = false
 
-    private val poll = object : Runnable {
-        override fun run() {
-            pollOnce()
-            pollHandler?.postDelayed(this, POLL_MS)
+    private val poll =
+        object : Runnable {
+            override fun run() {
+                pollOnce()
+                pollHandler?.postDelayed(this, POLL_MS)
+            }
         }
-    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -61,20 +62,26 @@ class LockWatchService : Service() {
         }
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val pending = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(getString(R.string.watch_notification_title))
-            .setContentText(getString(R.string.watch_notification_text))
-            .setContentIntent(pending)
-            .setOngoing(true)
-            .build()
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
+        val pending =
+            PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, MainActivity::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val notification: Notification =
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle(getString(R.string.watch_notification_title))
+                .setContentText(getString(R.string.watch_notification_text))
+                .setContentIntent(pending)
+                .setOngoing(true)
+                .build()
         if (Build.VERSION.SDK_INT >= 34) {
             startForeground(
                 NOTIFICATION_ID,
@@ -133,10 +140,11 @@ class LockWatchService : Service() {
     private fun maybeGate(packageName: String) {
         val session = (application as PinAlarmLockApp).lockSession
         if (!session.shouldGate(packageName, enrolled)) return
-        val intent = Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
-            putExtra(MainActivity.EXTRA_GATE, true)
-        }
+        val intent =
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION)
+                putExtra(MainActivity.EXTRA_GATE, true)
+            }
         startActivity(intent)
     }
 

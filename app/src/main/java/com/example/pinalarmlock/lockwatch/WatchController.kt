@@ -25,12 +25,13 @@ object WatchController {
         val appContext = context.applicationContext
         val hasPin = PinRepository(appContext).hasPin()
         val enrolled = ProtectedAppsRepository(appContext).list().size
-        val run = WatchEligibility.shouldRunWatcher(
-            hasPin = hasPin,
-            enrolledCount = enrolled,
-            hasUsageAccess = AppLockPermissions.hasUsageAccess(appContext),
-            hasOverlay = AppLockPermissions.hasOverlay(appContext),
-        )
+        val run =
+            WatchEligibility.shouldRunWatcher(
+                hasPin = hasPin,
+                enrolledCount = enrolled,
+                hasUsageAccess = AppLockPermissions.hasUsageAccess(appContext),
+                hasOverlay = AppLockPermissions.hasOverlay(appContext),
+            )
         val intent = Intent(appContext, LockWatchService::class.java)
         try {
             if (run) {

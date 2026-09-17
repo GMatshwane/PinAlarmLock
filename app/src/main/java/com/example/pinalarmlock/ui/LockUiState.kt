@@ -2,9 +2,13 @@ package com.example.pinalarmlock.ui
 
 sealed interface Dest {
     data object Loading : Dest
+
     data object SetupEnter : Dest
+
     data object SetupConfirm : Dest
+
     data object Locked : Dest
+
     data object Unlocked : Dest
 }
 
