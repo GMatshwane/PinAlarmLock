@@ -26,8 +26,13 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Accept Android SDK licenses
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME must be set on the runner}"
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1e45" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "84831b9409646161b162d1c6c7abc3a5" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
 
       - name: Grant Gradle wrapper execute permission
         run: chmod +x gradlew
