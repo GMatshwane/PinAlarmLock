@@ -33,25 +33,28 @@ fun SetupScreen(
     val isConfirm = state.dest == Dest.SetupConfirm
     PinShakeBox(nonce = state.shakeNonce, modifier = modifier.fillMaxSize()) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = stringResource(
-                        if (isConfirm) R.string.setup_confirm_title else R.string.setup_enter_title,
-                    ),
+                    text =
+                        stringResource(
+                            if (isConfirm) R.string.setup_confirm_title else R.string.setup_enter_title,
+                        ),
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = stringResource(
-                        if (isConfirm) R.string.setup_confirm_subtitle else R.string.setup_enter_subtitle,
-                    ),
+                    text =
+                        stringResource(
+                            if (isConfirm) R.string.setup_confirm_subtitle else R.string.setup_enter_subtitle,
+                        ),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

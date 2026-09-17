@@ -43,19 +43,24 @@ class HomeViewModel(
     fun refresh() {
         viewModelScope.launch {
             val enrolled = listEnrolled()
-            _uiState.value = withContext(ioDispatcher) {
-                HomeUiState(
-                    usageGranted = hasUsageAccess(),
-                    overlayGranted = hasOverlay(),
-                    apps = loadApps().map { app ->
-                        AppRow(app.packageName, app.label, app.packageName in enrolled)
-                    },
-                )
-            }
+            _uiState.value =
+                withContext(ioDispatcher) {
+                    HomeUiState(
+                        usageGranted = hasUsageAccess(),
+                        overlayGranted = hasOverlay(),
+                        apps =
+                            loadApps().map { app ->
+                                AppRow(app.packageName, app.label, app.packageName in enrolled)
+                            },
+                    )
+                }
         }
     }
 
-    fun setEnrolled(packageName: String, enrolled: Boolean) {
+    fun setEnrolled(
+        packageName: String,
+        enrolled: Boolean,
+    ) {
         if (!_uiState.value.canEnrol) return
         viewModelScope.launch {
             if (enrolled) add(packageName) else remove(packageName)
@@ -71,20 +76,21 @@ class HomeViewModel(
             hasUsageAccess: () -> Boolean,
             hasOverlay: () -> Boolean,
             onEnrolmentChanged: () -> Unit,
-        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                require(modelClass.isAssignableFrom(HomeViewModel::class.java))
-                return HomeViewModel(
-                    listEnrolled = protectedApps::list,
-                    add = protectedApps::add,
-                    remove = protectedApps::remove,
-                    loadApps = loadApps,
-                    hasUsageAccess = hasUsageAccess,
-                    hasOverlay = hasOverlay,
-                    onEnrolmentChanged = onEnrolmentChanged,
-                ) as T
+        ): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    require(modelClass.isAssignableFrom(HomeViewModel::class.java))
+                    return HomeViewModel(
+                        listEnrolled = protectedApps::list,
+                        add = protectedApps::add,
+                        remove = protectedApps::remove,
+                        loadApps = loadApps,
+                        hasUsageAccess = hasUsageAccess,
+                        hasOverlay = hasOverlay,
+                        onEnrolmentChanged = onEnrolmentChanged,
+                    ) as T
+                }
             }
-        }
     }
 }

@@ -14,12 +14,13 @@ class ProtectedAppsRepository(
 ) {
     constructor(context: Context) : this(context.pinDataStore)
 
-    private val logic = ProtectedAppsLogic(
-        readPackages = { dataStore.data.first()[PACKAGES_KEY] ?: emptySet() },
-        writePackages = { value ->
-            dataStore.edit { prefs -> prefs[PACKAGES_KEY] = value }
-        },
-    )
+    private val logic =
+        ProtectedAppsLogic(
+            readPackages = { dataStore.data.first()[PACKAGES_KEY] ?: emptySet() },
+            writePackages = { value ->
+                dataStore.edit { prefs -> prefs[PACKAGES_KEY] = value }
+            },
+        )
 
     val packages: Flow<Set<String>> =
         dataStore.data.map { prefs -> prefs[PACKAGES_KEY] ?: emptySet() }

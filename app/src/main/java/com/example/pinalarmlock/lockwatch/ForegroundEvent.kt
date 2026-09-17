@@ -22,7 +22,10 @@ internal class UsageEventCursor(
 
     private val handled = mutableSetOf<ObservedEvent>()
 
-    fun windowIfReady(enrolledReady: Boolean, now: Long): UsageEventWindow? {
+    fun windowIfReady(
+        enrolledReady: Boolean,
+        now: Long,
+    ): UsageEventWindow? {
         if (!enrolledReady) return null
         return UsageEventWindow(start = maxOf(lastEventTime, now - lookBackMs), end = now)
     }

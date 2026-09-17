@@ -56,16 +56,17 @@ class MainActivity : ComponentActivity() {
         }
         val protectedApps = ProtectedAppsRepository(applicationContext)
         val alarmPlayer = AlarmPlayer(applicationContext)
-        val lockViewModel = ViewModelProvider(
-            this,
-            LockViewModel.factory(
-                pinRepository = pinRepository,
-                alarmPlayer = alarmPlayer,
-                session = app.lockSession,
-                isGate = isGate,
-                onGateUnlocked = {},
-            ),
-        )[LockViewModel::class.java]
+        val lockViewModel =
+            ViewModelProvider(
+                this,
+                LockViewModel.factory(
+                    pinRepository = pinRepository,
+                    alarmPlayer = alarmPlayer,
+                    session = app.lockSession,
+                    isGate = isGate,
+                    onGateUnlocked = {},
+                ),
+            )[LockViewModel::class.java]
         lockViewModel.bootstrap()
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
@@ -77,16 +78,17 @@ class MainActivity : ComponentActivity() {
 
         val appContext = applicationContext
         val appPackageManager = appContext.packageManager
-        val homeViewModel = ViewModelProvider(
-            this,
-            HomeViewModel.factory(
-                protectedApps = protectedApps,
-                loadApps = { LaunchableApps.load(appPackageManager) },
-                hasUsageAccess = { AppLockPermissions.hasUsageAccess(appContext) },
-                hasOverlay = { AppLockPermissions.hasOverlay(appContext) },
-                onEnrolmentChanged = { WatchController.syncAsync(appContext) },
-            ),
-        )[HomeViewModel::class.java]
+        val homeViewModel =
+            ViewModelProvider(
+                this,
+                HomeViewModel.factory(
+                    protectedApps = protectedApps,
+                    loadApps = { LaunchableApps.load(appPackageManager) },
+                    hasUsageAccess = { AppLockPermissions.hasUsageAccess(appContext) },
+                    hasOverlay = { AppLockPermissions.hasOverlay(appContext) },
+                    onEnrolmentChanged = { WatchController.syncAsync(appContext) },
+                ),
+            )[HomeViewModel::class.java]
 
         lifecycle.addObserver(
             LifecycleEventObserver { _, event ->

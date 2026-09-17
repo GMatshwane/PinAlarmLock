@@ -40,13 +40,14 @@ class AlarmPlayer(private val context: Context) {
     private fun vibrate() {
         val vibrator = vibrator() ?: return
         if (!vibrator.hasVibrator()) return
-        val effect = VibrationEffect.createWaveform(
-            longArrayOf(
-                0, 500, 250, 500, 250, 500, 250, 500, 250, 500,
-                250, 500, 250, 500, 250, 500, 250, 500, 250, 500,
-            ),
-            -1,
-        )
+        val effect =
+            VibrationEffect.createWaveform(
+                longArrayOf(
+                    0, 500, 250, 500, 250, 500, 250, 500, 250, 500,
+                    250, 500, 250, 500, 250, 500, 250, 500, 250, 500,
+                ),
+                -1,
+            )
         runCatching { vibrator.vibrate(effect) }
     }
 
