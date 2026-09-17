@@ -1,0 +1,22 @@
+PIN Alarm Lock sits in front of apps you enrol on this phone. It is not a system lock screen, Device Owner/kiosk mode, Accessibility locker, biometric login, or encrypted vault. Enrolled apps stay unchanged; this app only covers them until you enter the correct PIN.
+
+How it works
+• First launch: choose a 4–6 digit PIN and confirm it.
+• Grant Usage access and Display over other apps, then pick launchable apps to protect.
+• Opening an enrolled app while the session is locked shows the PIN pad in front of it.
+• A wrong PIN shakes the pad, plays a short alarm on the device alarm stream, and can vibrate. The enrolled app stays covered.
+• The correct PIN unlocks every enrolled app until the screen turns off (or this app’s process dies).
+• Opening PIN Alarm Lock from the launcher while locked still requires the PIN, then shows the enrolment list.
+
+Privacy
+• No internet permission. The app does not send PIN data, enrolled app lists, or usage events off the device.
+• The PIN itself is never stored. Only a salted SHA-256 hash is saved in on-device preferences.
+• Enrolment is a local list of package names you choose.
+
+Permissions this core function needs
+• Usage access, so the app can tell when an enrolled app comes to the foreground.
+• Display over other apps, so the PIN pad can cover an enrolled app.
+• A special-use foreground service, so protection can continue after you leave this app.
+• Notifications, vibration, and boot completed, so the watcher can restart and remain visible while it runs.
+
+This listing’s core purpose is protecting the launchable apps you enrol on this device. The app lists those apps with a targeted launcher/home query; it does not request QUERY_ALL_PACKAGES.

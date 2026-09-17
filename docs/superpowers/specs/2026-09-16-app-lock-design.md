@@ -20,13 +20,13 @@ Not a system lock screen, Device Owner, Accessibility service, biometric login, 
 - Device Admin / Device Owner / work profile / kiosk
 - Biometrics
 - Per-app PINs or per-app sessions
-- Play Console listing, Data safety form, or `QUERY_ALL_PACKAGES` declaration submission
+- Play Console listing, Data safety form, or `QUERY_ALL_PACKAGES` declaration submission (see `docs/play/` for the distribution checklist; the app itself does not request `QUERY_ALL_PACKAGES`)
 - Locking notifications, Recents previews, or work profiles
 - “Lock now” control (session ends only on screen off, device lock, or process death)
 
 ## Package and toolchain
 
-Unchanged: `com.example.pinalarmlock`, minSdk 26, targetSdk 35, compileSdk 35, AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1.
+Unchanged: `com.pinalarmlock.app`, minSdk 26, targetSdk 35, compileSdk 35, AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1.
 
 ## Session
 
@@ -49,11 +49,11 @@ Wrong PIN does not change the session.
 
 1. Session is locked
 2. `packageName` is in the enrolled set
-3. `packageName` is not PinAlarmLock (`com.example.pinalarmlock`)
+3. `packageName` is not PinAlarmLock (`com.pinalarmlock.app`)
 
 The enrolment list and watcher never include:
 
-- PinAlarmLock (`com.example.pinalarmlock`)
+- PinAlarmLock (`com.pinalarmlock.app`)
 - Any package that handles `ACTION_MAIN` + `CATEGORY_HOME` (the launcher)
 - `com.android.settings`
 - `com.android.systemui`
@@ -136,11 +136,10 @@ Android 13+: request `POST_NOTIFICATIONS` so the FGS notification can post. Deni
 | `SYSTEM_ALERT_WINDOW` | Start gate activity from the background |
 | `FOREGROUND_SERVICE` | Watcher |
 | `FOREGROUND_SERVICE_SPECIAL_USE` | FGS type on API 34+ |
-| `QUERY_ALL_PACKAGES` | List/enrol arbitrary apps on API 30+ |
 | `POST_NOTIFICATIONS` | FGS notification on API 33+ |
 | `RECEIVE_BOOT_COMPLETED` | Restart watcher |
 
-No `INTERNET`. Manifest includes `queries` for `MAIN`/`LAUNCHER` and a `specialUse` FGS property. This work does not submit Play forms.
+No `INTERNET`. No `QUERY_ALL_PACKAGES` (launcher/home `<queries>` list enrolable apps). Manifest includes a `specialUse` FGS property. Play Console forms and listing copy live in `docs/play/`.
 
 ## Failures
 

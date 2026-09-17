@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PIN Alarm Lock privacy policy</title>
+  <style>
+    body { font-family: system-ui, sans-serif; line-height: 1.5; max-width: 42rem; margin: 2rem auto; padding: 0 1rem; color: #1b365d; background: #f6f3ee; }
+    h1, h2 { font-weight: 650; }
+    a { color: #1b365d; }
+  </style>
+</head>
+<body>
+  <h1>PIN Alarm Lock privacy policy</h1>
+  <p>Last updated: 17 September 2026</p>
+  <p>PIN Alarm Lock (“the app”) is an on-device PIN gate for apps you enrol on the same phone. This policy describes what the app stores and what it does not collect.</p>
+
+  <h2>Who this policy covers</h2>
+  <p>This policy applies to the Android app with package name <code>com.pinalarmlock.app</code>, distributed as PIN Alarm Lock.</p>
+
+  <h2>Data the app stores on the device</h2>
+  <p>The app stores the following only in on-device preferences (Android DataStore). None of this is transmitted off the device by the app:</p>
+  <ul>
+    <li>A random salt and a SHA-256 hash of your PIN. The PIN itself is not stored.</li>
+    <li>The package names of apps you enrol for protection.</li>
+  </ul>
+  <p>The unlock session exists only in memory. It is cleared when the screen turns off or the app process dies.</p>
+
+  <h2>Data the app does not collect</h2>
+  <ul>
+    <li>No internet permission. The app cannot send data to a server.</li>
+    <li>No account, advertising ID, analytics, crash reporting, or location collection.</li>
+    <li>No sale or sharing of installed-app inventory, PIN material, or usage events.</li>
+  </ul>
+
+  <h2>Sensitive permissions</h2>
+  <p>Usage access is used only to see which app is in the foreground so an enrolled app can be covered by the PIN pad. Display-over-other-apps is used only to show that PIN pad. The special-use foreground service keeps that protection running after you leave the app. Notification, vibration, and boot-completed permissions support that same on-device lock function.</p>
+  <p>The app lists launchable apps with a targeted launcher/home query. It does not request the <code>QUERY_ALL_PACKAGES</code> permission.</p>
+
+  <h2>Children</h2>
+  <p>The app is not directed at children and does not knowingly collect personal data from children.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the date at the top of this page will be updated.</p>
+
+  <h2>Contact</h2>
+  <p>Questions about this policy: open an issue on the <a href="https://github.com/GMatshwane/PinAlarmLock">PinAlarmLock GitHub repository</a>.</p>
+</body>
+</html>
