@@ -22,14 +22,24 @@ The plaintext PIN is never stored. A salted SHA-256 hash is written to Preferenc
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
+Signed Play bundle (needs `keystore.properties` from `scripts/create-upload-keystore.sh`):
+
+```bash
+./gradlew :app:bundleRelease
+```
+
 Requirements: JDK 17+, Android SDK with `compileSdk` / `targetSdk` 35.
 
 ## Toolchain
 
-- Package: `com.example.pinalarmlock`
+- Application id / namespace: `com.pinalarmlock.app`
 - minSdk 26, targetSdk 35, compileSdk 35
 - AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1
 
+## Play Store
+
+Distribution setup, listing copy, Data safety answers, and the upload-key workflow are in [docs/play/README.md](docs/play/README.md).
+
 ## Permissions
 
-`VIBRATE`, `PACKAGE_USAGE_STATS`, `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_SPECIAL_USE`, `QUERY_ALL_PACKAGES`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`. No `INTERNET`.
+`VIBRATE`, `PACKAGE_USAGE_STATS`, `SYSTEM_ALERT_WINDOW`, `FOREGROUND_SERVICE` / `FOREGROUND_SERVICE_SPECIAL_USE`, `POST_NOTIFICATIONS`, `RECEIVE_BOOT_COMPLETED`. No `INTERNET`. No `QUERY_ALL_PACKAGES`.

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,26 +7,45 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint")
 }
 
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.isFile) {
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
+}
+
 android {
-    namespace = "com.example.pinalarmlock"
+    namespace = "com.pinalarmlock.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.pinalarmlock"
+        applicationId = "com.pinalarmlock.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = providers.environmentVariable("VERSION_CODE").orNull?.toIntOrNull() ?: 1
+        versionName = providers.environmentVariable("VERSION_NAME").orNull ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (keystorePropertiesFile.isFile) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
@@ -39,6 +60,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     testOptions {
@@ -49,6 +71,25 @@ android {
         abortOnError = true
         warningsAsErrors = false
         checkReleaseBuilds = false
+    }
+}
+
+val allowCiSigning = providers.environmentVariable("ALLOW_CI_SIGNING").orNull == "true"
+val releaseStoreFile = keystoreProperties.getProperty("storeFile").orEmpty()
+val releaseKeyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
+val isCiThrowawayKey =
+    releaseStoreFile.contains("ci-keystore") || releaseKeyAlias == "ci"
+tasks.matching {
+    it.name == "signReleaseBundle" || it.name == "packageRelease" || it.name == "assembleRelease"
+}.configureEach {
+    doFirst {
+        if (isCiThrowawayKey && !allowCiSigning) {
+            throw GradleException(
+                "keystore.properties points at the CI throwaway key, which expires in 2 days. " +
+                    "Play Console rejects that certificate. Create an upload key with " +
+                    "./scripts/create-upload-keystore.sh and rebuild. CI may set ALLOW_CI_SIGNING=true."
+            )
+        }
     }
 }
 

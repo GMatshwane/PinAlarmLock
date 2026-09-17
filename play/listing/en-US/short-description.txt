@@ -1,0 +1,1 @@
+PIN-gate enrolled apps and sound an on-device alarm after a wrong PIN.

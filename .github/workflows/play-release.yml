@@ -1,0 +1,129 @@
+name: Play release
+
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Play Console track
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+        default: internal
+      status:
+        description: Release status (draft until the app leaves Draft in Play Console)
+        type: choice
+        options:
+          - draft
+          - completed
+        default: draft
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    name: signed-aab
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    env:
+      VERSION_NAME: ${{ github.ref_type == 'tag' && github.ref_name || format('1.0.{0}', github.run_number) }}
+      VERSION_CODE: ${{ github.run_number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require upload-key secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing secret: $name" >&2
+              missing=1
+            fi
+          done
+          if [[ "$missing" -ne 0 ]]; then
+            echo "Add the upload-key secrets listed in docs/play/README.md." >&2
+            exit 1
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Accept Android SDK licenses
+        run: |
+          set -euo pipefail
+          : "${ANDROID_HOME:?ANDROID_HOME must be set on the runner}"
+          mkdir -p "$ANDROID_HOME/licenses"
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1e45" > "$ANDROID_HOME/licenses/android-sdk-license"
+          echo "84831b9409646161b162d1c6c7abc3a5" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+
+      - name: Grant Gradle wrapper execute permission
+        run: chmod +x gradlew
+
+      - name: Decode upload keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os, pathlib, base64
+          raw = os.environ["ANDROID_KEYSTORE_BASE64"].strip()
+          pathlib.Path("upload-keystore.jks").write_bytes(base64.b64decode(raw))
+          props = pathlib.Path("keystore.properties")
+          props.write_text(
+              "storeFile=upload-keystore.jks\n"
+              f"storePassword={os.environ['ANDROID_KEYSTORE_PASSWORD']}\n"
+              f"keyAlias={os.environ['ANDROID_KEY_ALIAS']}\n"
+              f"keyPassword={os.environ['ANDROID_KEY_PASSWORD']}\n"
+          )
+          PY
+
+      - name: Normalize version name
+        run: |
+          set -euo pipefail
+          name="${VERSION_NAME#v}"
+          echo "VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "Building $name ($VERSION_CODE)"
+
+      - name: Bundle signed release
+        run: ./gradlew --no-daemon :app:bundleRelease
+
+      - name: Upload signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ env.VERSION_NAME }}
+          path: |
+            app/build/outputs/bundle/release/app-release.aab
+            app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+
+      - name: Publish to Play Console
+        if: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' }}
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.pinalarmlock.app
+          releaseFiles: app/build/outputs/bundle/release/app-release.aab
+          tracks: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.track || 'internal' }}
+          status: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.status || 'draft' }}
+          changesNotSentForReview: true
+          whatsNewDirectory: play/whatsnew
+          mappingFile: app/build/outputs/mapping/release/mapping.txt
