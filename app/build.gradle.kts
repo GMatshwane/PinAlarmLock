@@ -74,7 +74,6 @@ android {
     }
 }
 
-val allowCiSigning = providers.environmentVariable("ALLOW_CI_SIGNING").orNull == "true"
 val releaseStoreFile = keystoreProperties.getProperty("storeFile").orEmpty()
 val releaseKeyAlias = keystoreProperties.getProperty("keyAlias").orEmpty()
 val isCiThrowawayKey =
@@ -83,11 +82,11 @@ tasks.matching {
     it.name == "signReleaseBundle" || it.name == "packageRelease" || it.name == "assembleRelease"
 }.configureEach {
     doFirst {
-        if (isCiThrowawayKey && !allowCiSigning) {
+        if (isCiThrowawayKey) {
             throw GradleException(
                 "keystore.properties points at the CI throwaway key, which expires in 2 days. " +
                     "Play Console rejects that certificate. Create an upload key with " +
-                    "./scripts/create-upload-keystore.sh and rebuild. CI may set ALLOW_CI_SIGNING=true."
+                    "./scripts/create-upload-keystore.sh and rebuild."
             )
         }
     }

@@ -11,7 +11,7 @@ Privacy policy URL after GitHub Pages is enabled:
 - Play application id `com.pinalarmlock.app` (not `com.example.*`).
 - Adaptive launcher icon.
 - Release builds minify, shrink resources, and sign from `keystore.properties`.
-- CI `play-bundle` job compiles a signed AAB on every push/PR (throwaway key; not the Play upload key).
+- CI `quality` job runs ktlint, Android lint, unit tests, and `assembleDebug` on every pull request and every push to `main`.
 - `Play release` workflow builds the upload-key AAB on `v*` tags or manual dispatch, then publishes to Play when `PLAY_SERVICE_ACCOUNT_JSON` is set.
 - Listing copy, Data safety answers, permission declarations, and screenshots live under `play/`.
 
@@ -85,6 +85,4 @@ Fill Play Console forms using `docs/play/permissions-declaration.md`. Short vide
 - CI: tag `v1.0.0` (or run **Play release**) after secrets are set.
 - `VERSION_CODE` is `github.run_number`. `VERSION_NAME` is the tag without the leading `v`, or `1.0.<run_number>` on manual dispatch.
 
-Do not upload the CI job artifact named `app-release-ci`; that bundle is signed with a throwaway key.
-
-If Play Console says the certificate **expires too soon**, the AAB was signed with that CI key (`CN=PinAlarmLock CI`, 2-day validity). Create a real upload key (`./scripts/create-upload-keystore.sh`, 10000-day validity), run `./gradlew :app:bundleRelease`, and upload the new `app-release.aab`. Google requires the upload certificate to remain valid after 22 October 2033.
+If Play Console says the certificate **expires too soon**, the AAB was signed with a leftover CI throwaway key (`CN=PinAlarmLock CI`, 2-day validity), not the upload key. Remove `keystore.properties` if it points at `ci-keystore` or alias `ci`, create a real upload key (`./scripts/create-upload-keystore.sh`, 10000-day validity), run `./gradlew :app:bundleRelease`, and upload the new `app-release.aab`. Google requires the upload certificate to remain valid after 22 October 2033.
