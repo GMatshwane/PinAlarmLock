@@ -11,7 +11,7 @@ Privacy policy URL after GitHub Pages is enabled:
 - Play application id `com.pinalarmlock.app` (not `com.example.*`).
 - Adaptive launcher icon.
 - Release builds minify, shrink resources, and sign from `keystore.properties`.
-- CI `play-bundle` job compiles a signed AAB on every push/PR (throwaway key; not the Play upload key).
+- CI `quality` job runs ktlint, Android lint, unit tests, and `assembleDebug` on every pull request and every push to `main`.
 - `Play release` workflow builds the upload-key AAB on `v*` tags or manual dispatch, then publishes to Play when `PLAY_SERVICE_ACCOUNT_JSON` is set.
 - Listing copy, Data safety answers, permission declarations, and screenshots live under `play/`.
 
