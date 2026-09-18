@@ -33,10 +33,15 @@ class LockViewModel(
     private val _gateUnlockedEvents = MutableSharedFlow<Unit>(replay = 1)
     val gateUnlockedEvents: SharedFlow<Unit> = _gateUnlockedEvents.asSharedFlow()
 
+    private val _confirmDeviceLockEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val confirmDeviceLockEvents: SharedFlow<Unit> = _confirmDeviceLockEvents.asSharedFlow()
+
     private var pendingSetupPin: String = ""
+    private var replacingPin: Boolean = false
 
     fun bootstrap() {
         viewModelScope.launch {
+            replacingPin = false
             val dest =
                 when {
                     !hasPin() -> Dest.SetupEnter
@@ -44,8 +49,80 @@ class LockViewModel(
                     else -> Dest.Unlocked
                 }
             _uiState.update {
-                it.copy(dest = dest, enteredPin = "", errorMessage = null)
+                it.copy(
+                    dest = dest,
+                    enteredPin = "",
+                    errorMessage = null,
+                    canCancelReset = false,
+                )
             }
+        }
+    }
+
+    fun startChangePin() {
+        if (_uiState.value.dest != Dest.Unlocked) return
+        replacingPin = true
+        pendingSetupPin = ""
+        _uiState.update {
+            it.copy(
+                dest = Dest.ChangeCurrent,
+                enteredPin = "",
+                errorMessage = null,
+                canCancelReset = true,
+            )
+        }
+    }
+
+    fun onForgotPin() {
+        if (_uiState.value.dest != Dest.Locked) return
+        _confirmDeviceLockEvents.tryEmit(Unit)
+    }
+
+    fun onDeviceLockConfirmed() {
+        replacingPin = true
+        pendingSetupPin = ""
+        unlockSession()
+        stopAlarm()
+        _uiState.update {
+            it.copy(
+                dest = Dest.SetupEnter,
+                enteredPin = "",
+                errorMessage = null,
+                alarmActive = false,
+                canCancelReset = true,
+            )
+        }
+    }
+
+    fun onDeviceLockUnavailable() {
+        if (_uiState.value.dest != Dest.Locked) return
+        _uiState.update {
+            it.copy(
+                errorMessage = DEVICE_LOCK_REQUIRED,
+                shakeNonce = it.shakeNonce + 1,
+            )
+        }
+    }
+
+    fun onCancelReset() {
+        if (!_uiState.value.canCancelReset) return
+        pendingSetupPin = ""
+        replacingPin = false
+        stopAlarm()
+        val dest =
+            when {
+                isGate -> Dest.Locked
+                isSessionUnlocked() -> Dest.Unlocked
+                else -> Dest.Locked
+            }
+        _uiState.update {
+            it.copy(
+                dest = dest,
+                enteredPin = "",
+                errorMessage = null,
+                alarmActive = false,
+                canCancelReset = false,
+            )
         }
     }
 
@@ -105,14 +182,56 @@ class LockViewModel(
                     setPin(pin)
                     unlockSession()
                     pendingSetupPin = ""
+                    replacingPin = false
                     stopAlarm()
-                    _uiState.update {
-                        it.copy(
-                            dest = Dest.Unlocked,
-                            enteredPin = "",
-                            errorMessage = null,
-                            alarmActive = false,
-                        )
+                    if (isGate) {
+                        _gateUnlockedEvents.tryEmit(Unit)
+                        onGateUnlocked()
+                        _uiState.update {
+                            it.copy(
+                                dest = Dest.Locked,
+                                enteredPin = "",
+                                errorMessage = null,
+                                alarmActive = false,
+                                canCancelReset = false,
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                dest = Dest.Unlocked,
+                                enteredPin = "",
+                                errorMessage = null,
+                                alarmActive = false,
+                                canCancelReset = false,
+                            )
+                        }
+                    }
+                }
+            }
+            Dest.ChangeCurrent -> {
+                viewModelScope.launch {
+                    if (verifyPin(pin)) {
+                        stopAlarm()
+                        _uiState.update {
+                            it.copy(
+                                dest = Dest.SetupEnter,
+                                enteredPin = "",
+                                errorMessage = null,
+                                alarmActive = false,
+                            )
+                        }
+                    } else {
+                        startAlarm()
+                        _uiState.update {
+                            it.copy(
+                                dest = Dest.ChangeCurrent,
+                                enteredPin = "",
+                                errorMessage = WRONG_PIN,
+                                shakeNonce = it.shakeNonce + 1,
+                                alarmActive = true,
+                            )
+                        }
                     }
                 }
             }
@@ -176,12 +295,17 @@ class LockViewModel(
         super.onCleared()
     }
 
-    private fun isPinEntryDest(dest: Dest): Boolean = dest == Dest.SetupEnter || dest == Dest.SetupConfirm || dest == Dest.Locked
+    private fun isPinEntryDest(dest: Dest): Boolean =
+        dest == Dest.SetupEnter ||
+            dest == Dest.SetupConfirm ||
+            dest == Dest.Locked ||
+            dest == Dest.ChangeCurrent
 
     companion object {
         const val WRONG_PIN = "Wrong PIN"
         const val PINS_DO_NOT_MATCH = "PINs do not match"
         const val PIN_LENGTH_ERROR = "PIN must be 4–6 digits"
+        const val DEVICE_LOCK_REQUIRED = "Set a screen lock in Android Settings to reset a forgotten PIN."
 
         fun factory(
             pinRepository: PinRepository,

@@ -8,6 +8,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.yield
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -251,6 +252,129 @@ class LockViewModelTest {
             vm.onAppBackgrounded()
             assertEquals(Dest.SetupEnter, vm.uiState.value.dest)
             assertEquals("", vm.uiState.value.enteredPin)
+        }
+
+    @Test
+    fun changePinFromUnlockedAsksForCurrentPin() =
+        runTest {
+            val vm = viewModel(hasPin = true, verify = { true }, isSessionUnlocked = { true })
+            vm.bootstrap()
+            vm.startChangePin()
+            assertEquals(Dest.ChangeCurrent, vm.uiState.value.dest)
+            assertEquals("", vm.uiState.value.enteredPin)
+        }
+
+    @Test
+    fun changePinIgnoredWhileLocked() =
+        runTest {
+            val vm = viewModel(hasPin = true)
+            vm.bootstrap()
+            vm.startChangePin()
+            assertEquals(Dest.Locked, vm.uiState.value.dest)
+        }
+
+    @Test
+    fun wrongCurrentPinAlarmsAndStaysOnChangeCurrent() =
+        runTest {
+            val alarms = mutableListOf<String>()
+            val vm =
+                viewModel(
+                    hasPin = true,
+                    verify = { it == "1234" },
+                    alarms = alarms,
+                    isSessionUnlocked = { true },
+                )
+            vm.bootstrap()
+            vm.startChangePin()
+            enter(vm, "0000")
+            vm.onSubmit()
+            assertEquals(Dest.ChangeCurrent, vm.uiState.value.dest)
+            assertEquals(LockViewModel.WRONG_PIN, vm.uiState.value.errorMessage)
+            assertTrue(vm.uiState.value.alarmActive)
+            assertEquals(listOf("start"), alarms)
+        }
+
+    @Test
+    fun changePinConfirmSavesNewPinAndReturnsToEnrolment() =
+        runTest {
+            val saved = mutableListOf<String>()
+            val vm =
+                viewModel(
+                    hasPin = true,
+                    verify = { it == "1234" },
+                    onSetPin = { saved += it },
+                    isSessionUnlocked = { true },
+                )
+            vm.bootstrap()
+            vm.startChangePin()
+            enter(vm, "1234")
+            vm.onSubmit()
+            assertEquals(Dest.SetupEnter, vm.uiState.value.dest)
+            enter(vm, "5678")
+            vm.onSubmit()
+            enter(vm, "5678")
+            vm.onSubmit()
+            assertEquals(Dest.Unlocked, vm.uiState.value.dest)
+            assertEquals(listOf("5678"), saved)
+        }
+
+    @Test
+    fun forgotPinRequestsDeviceLock() =
+        runTest {
+            val vm = viewModel(hasPin = true)
+            vm.bootstrap()
+            val requested = async { vm.confirmDeviceLockEvents.first() }
+            yield()
+            vm.onForgotPin()
+            requested.await()
+            assertEquals(Dest.Locked, vm.uiState.value.dest)
+        }
+
+    @Test
+    fun deviceLockSuccessOpensNewPinSetupAndUnlocksSession() =
+        runTest {
+            var unlocked = false
+            val vm =
+                viewModel(
+                    hasPin = true,
+                    unlockSession = { unlocked = true },
+                )
+            vm.bootstrap()
+            vm.onDeviceLockConfirmed()
+            assertTrue(unlocked)
+            assertEquals(Dest.SetupEnter, vm.uiState.value.dest)
+        }
+
+    @Test
+    fun deviceLockUnavailableStaysLockedWithMessage() =
+        runTest {
+            val vm = viewModel(hasPin = true)
+            vm.bootstrap()
+            vm.onDeviceLockUnavailable()
+            assertEquals(Dest.Locked, vm.uiState.value.dest)
+            assertEquals(LockViewModel.DEVICE_LOCK_REQUIRED, vm.uiState.value.errorMessage)
+        }
+
+    @Test
+    fun forgotPinOnGateThenNewPinFinishesGate() =
+        runTest {
+            var finished = false
+            val saved = mutableListOf<String>()
+            val vm =
+                viewModel(
+                    hasPin = true,
+                    onSetPin = { saved += it },
+                    isGate = true,
+                    onGateUnlocked = { finished = true },
+                )
+            vm.bootstrap()
+            vm.onDeviceLockConfirmed()
+            enter(vm, "9999")
+            vm.onSubmit()
+            enter(vm, "9999")
+            vm.onSubmit()
+            assertEquals(listOf("9999"), saved)
+            assertTrue(finished)
         }
 
     private fun enter(

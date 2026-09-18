@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,9 +29,25 @@ fun SetupScreen(
     onDigit: (Char) -> Unit,
     onBackspace: () -> Unit,
     onSubmit: () -> Unit,
+    onCancel: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    val isConfirm = state.dest == Dest.SetupConfirm
+    val title =
+        when (state.dest) {
+            Dest.ChangeCurrent -> R.string.change_current_title
+            Dest.SetupConfirm -> R.string.setup_confirm_title
+            Dest.SetupEnter ->
+                if (state.canCancelReset) R.string.change_enter_title else R.string.setup_enter_title
+            else -> R.string.setup_enter_title
+        }
+    val subtitle =
+        when (state.dest) {
+            Dest.ChangeCurrent -> R.string.change_current_subtitle
+            Dest.SetupConfirm -> R.string.setup_confirm_subtitle
+            Dest.SetupEnter ->
+                if (state.canCancelReset) R.string.change_enter_subtitle else R.string.setup_enter_subtitle
+            else -> R.string.setup_enter_subtitle
+        }
     PinShakeBox(nonce = state.shakeNonce, modifier = modifier.fillMaxSize()) {
         Column(
             modifier =
@@ -43,18 +60,12 @@ fun SetupScreen(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text =
-                        stringResource(
-                            if (isConfirm) R.string.setup_confirm_title else R.string.setup_enter_title,
-                        ),
+                    text = stringResource(title),
                     style = MaterialTheme.typography.headlineMedium,
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text =
-                        stringResource(
-                            if (isConfirm) R.string.setup_confirm_subtitle else R.string.setup_enter_subtitle,
-                        ),
+                    text = stringResource(subtitle),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -74,6 +85,11 @@ fun SetupScreen(
                 onSubmit = onSubmit,
                 submitEnabled = state.enteredPin.length in 4..6,
             )
+            if (state.canCancelReset) {
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.cancel_reset))
+                }
+            }
         }
     }
 }

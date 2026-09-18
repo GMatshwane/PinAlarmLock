@@ -9,6 +9,8 @@ sealed interface Dest {
 
     data object Locked : Dest
 
+    data object ChangeCurrent : Dest
+
     data object Unlocked : Dest
 }
 
@@ -18,4 +20,5 @@ data class LockUiState(
     val errorMessage: String? = null,
     val shakeNonce: Int = 0,
     val alarmActive: Boolean = false,
+    val canCancelReset: Boolean = false,
 )

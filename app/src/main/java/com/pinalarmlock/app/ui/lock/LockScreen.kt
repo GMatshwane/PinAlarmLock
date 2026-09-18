@@ -10,6 +10,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +25,7 @@ fun LockScreen(
     onDigit: (Char) -> Unit,
     onBackspace: () -> Unit,
     onSubmit: () -> Unit,
+    onForgotPin: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     PinShakeBox(nonce = state.shakeNonce, modifier = modifier.fillMaxSize()) {
@@ -63,6 +65,9 @@ fun LockScreen(
                 onSubmit = onSubmit,
                 submitEnabled = state.enteredPin.length in 4..6,
             )
+            TextButton(onClick = onForgotPin) {
+                Text(stringResource(R.string.forgot_pin))
+            }
         }
     }
 }

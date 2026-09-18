@@ -40,12 +40,13 @@ fun AppNavHost(
                         CircularProgressIndicator()
                     }
                 }
-                Dest.SetupEnter, Dest.SetupConfirm ->
+                Dest.SetupEnter, Dest.SetupConfirm, Dest.ChangeCurrent ->
                     SetupScreen(
                         state = state,
                         onDigit = viewModel::onDigit,
                         onBackspace = viewModel::onBackspace,
                         onSubmit = viewModel::onSubmit,
+                        onCancel = viewModel::onCancelReset,
                     )
                 Dest.Locked ->
                     LockScreen(
@@ -53,6 +54,7 @@ fun AppNavHost(
                         onDigit = viewModel::onDigit,
                         onBackspace = viewModel::onBackspace,
                         onSubmit = viewModel::onSubmit,
+                        onForgotPin = viewModel::onForgotPin,
                     )
                 Dest.Unlocked ->
                     HomeScreen(
@@ -60,6 +62,7 @@ fun AppNavHost(
                         onOpenUsageAccess = onOpenUsageAccess,
                         onOpenOverlay = onOpenOverlay,
                         onToggle = onToggle,
+                        onChangePin = viewModel::startChangePin,
                     )
             }
         }
