@@ -22,7 +22,7 @@ App-owned PIN gate for a single-activity Jetpack Compose Android app. Not a syst
 ## Package and toolchain
 
 - Application ID / namespace: `com.pinalarmlock.app`
-- minSdk 26, targetSdk 35, compileSdk 35
+- minSdk 26, targetSdk 36, compileSdk 36
 - AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle wrapper 8.11.1
 
 ## Destinations

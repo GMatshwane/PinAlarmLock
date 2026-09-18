@@ -28,13 +28,13 @@ Signed Play bundle (needs `keystore.properties` from `scripts/create-upload-keys
 ./gradlew :app:bundleRelease
 ```
 
-Requirements: JDK 17+, Android SDK with `compileSdk` / `targetSdk` 35.
+Requirements: JDK 17+, Android SDK with `compileSdk` / `targetSdk` 36.
 
 ## Toolchain
 
 - Application id / namespace: `com.pinalarmlock.app`
-- minSdk 26, targetSdk 35, compileSdk 35
-- AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1
+- minSdk 26, targetSdk 36, compileSdk 36
+- AGP 8.9.1, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1
 
 ## Play Store
 

@@ -26,7 +26,7 @@ Not a system lock screen, Device Owner, Accessibility service, biometric login, 
 
 ## Package and toolchain
 
-Unchanged: `com.pinalarmlock.app`, minSdk 26, targetSdk 35, compileSdk 35, AGP 8.7.3, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1.
+Unchanged: `com.pinalarmlock.app`, minSdk 26, targetSdk 36, compileSdk 36, AGP 8.9.1, Kotlin 2.0.21, Compose BOM 2024.12.01, Gradle 8.11.1.
 
 ## Session
 

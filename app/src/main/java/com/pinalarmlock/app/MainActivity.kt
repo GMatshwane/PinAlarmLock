@@ -1,12 +1,11 @@
 package com.pinalarmlock.app
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,6 +21,8 @@ import com.pinalarmlock.app.alarm.AlarmPlayer
 import com.pinalarmlock.app.data.PinRepository
 import com.pinalarmlock.app.data.ProtectedAppsRepository
 import com.pinalarmlock.app.lockwatch.AppLockPermissions
+import com.pinalarmlock.app.lockwatch.AppLockSettings
+import com.pinalarmlock.app.lockwatch.DeviceLock
 import com.pinalarmlock.app.lockwatch.LaunchableApps
 import com.pinalarmlock.app.lockwatch.WatchController
 import com.pinalarmlock.app.ui.LockViewModel
@@ -34,6 +35,15 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     private val notificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
+    private lateinit var lockViewModel: LockViewModel
+
+    private val deviceLockLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                lockViewModel.onDeviceLockConfirmed()
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,7 +66,7 @@ class MainActivity : ComponentActivity() {
         }
         val protectedApps = ProtectedAppsRepository(applicationContext)
         val alarmPlayer = AlarmPlayer(applicationContext)
-        val lockViewModel =
+        lockViewModel =
             ViewModelProvider(
                 this,
                 LockViewModel.factory(
@@ -72,6 +82,13 @@ class MainActivity : ComponentActivity() {
             repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 lockViewModel.gateUnlockedEvents.collect {
                     finish()
+                }
+            }
+        }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                lockViewModel.confirmDeviceLockEvents.collect {
+                    promptDeviceLock()
                 }
             }
         }
@@ -112,19 +129,32 @@ class MainActivity : ComponentActivity() {
                     viewModel = lockViewModel,
                     homeState = homeState,
                     onOpenUsageAccess = {
-                        startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                        AppLockSettings.start(
+                            this,
+                            AppLockSettings.usageAccess(packageName),
+                            AppLockSettings.usageAccessList(),
+                        )
                     },
                     onOpenOverlay = {
-                        startActivity(
-                            Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:$packageName"),
-                            ),
-                        )
+                        AppLockSettings.start(this, AppLockSettings.overlay(packageName))
                     },
                     onToggle = homeViewModel::setEnrolled,
                 )
             }
+        }
+    }
+
+    private fun promptDeviceLock() {
+        val intent =
+            DeviceLock.confirmIntent(
+                this,
+                getString(R.string.forgot_pin_device_title),
+                getString(R.string.forgot_pin_device_subtitle),
+            )
+        if (intent == null) {
+            lockViewModel.onDeviceLockUnavailable()
+        } else {
+            deviceLockLauncher.launch(intent)
         }
     }
 

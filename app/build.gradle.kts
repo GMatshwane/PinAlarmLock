@@ -15,13 +15,13 @@ if (keystorePropertiesFile.isFile) {
 
 android {
     namespace = "com.pinalarmlock.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.pinalarmlock.app"
         minSdk = 26
-        targetSdk = 35
-        versionCode = providers.environmentVariable("VERSION_CODE").orNull?.toIntOrNull() ?: 1
+        targetSdk = 36
+        versionCode = providers.environmentVariable("VERSION_CODE").orNull?.toIntOrNull() ?: 2
         versionName = providers.environmentVariable("VERSION_NAME").orNull ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

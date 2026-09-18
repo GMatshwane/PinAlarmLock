@@ -12,6 +12,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +26,7 @@ fun HomeScreen(
     onOpenUsageAccess: () -> Unit,
     onOpenOverlay: () -> Unit,
     onToggle: (packageName: String, enrolled: Boolean) -> Unit,
+    onChangePin: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -38,6 +40,9 @@ fun HomeScreen(
             text = stringResource(R.string.home_title),
             style = MaterialTheme.typography.headlineMedium,
         )
+        TextButton(onClick = onChangePin) {
+            Text(stringResource(R.string.change_pin))
+        }
         if (!state.canEnrol) {
             Text(
                 text = stringResource(R.string.permissions_needed),
@@ -53,6 +58,10 @@ fun HomeScreen(
             Button(onClick = onOpenOverlay, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.permission_overlay))
             }
+            Text(
+                text = stringResource(R.string.permission_overlay_hint),
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
